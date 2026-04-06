@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ה-AI האישי של אדם</title>
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Marked.js for markdown support -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Assistant', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        @media (prefers-color-scheme: dark) {
+            body { background-color: #0f172a; color: #f1f5f9; }
+        }
+        .chat-container {
+            height: calc(100vh - 160px);
+        }
+        .message-bubble {
+            max-width: 80%;
+            word-wrap: break-word;
+            animation: slideIn 0.2s ease-out forwards;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .user-msg {
+            background: #2563eb;
+            color: white;
+            border-radius: 1.25rem 1.25rem 0.25rem 1.25rem;
+            align-self: flex-start;
+        }
+        .ai-msg {
+            background: #ffffff;
+            color: #1e293b;
+            border-radius: 1.25rem 1.25rem 1.25rem 0.25rem;
+            align-self: flex-end;
+            border: 1px solid #e2e8f0;
+        }
+        .dark .ai-msg {
+            background: #1e293b;
+            color: #f1f5f9;
+            border-color: #334155;
+        }
+        /* Markdown overrides for chat bubbles */
+        .ai-msg p { margin-bottom: 0.5rem; }
+        .ai-msg p:last-child { margin-bottom: 0; }
+        .ai-msg pre {
+            background: #111827;
+            color: #10b981;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            direction: ltr;
+            margin: 0.5rem 0;
+            font-family: monospace;
+        }
+        .ai-msg code { font-family: monospace; background: rgba(0,0,0,0.1); padding: 0.1rem 0.3rem; border-radius: 0.2rem; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+
+    <!-- Header -->
+    <header class="bg-white dark:bg-slate-800 border-b dark:border-slate-700 p-4 flex justify-between items-center shadow-sm z-10">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.456-2.454L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.454zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold">ה-AI האישי של אדם</h1>
+                <p class="text-xs text-green-600 dark:text-green-400 font-medium">מחובר באמצעות GitHub Pages</p>
+            </div>
+        </div>
+        <button id="reset-btn" class="p-2 text-slate-400 hover:text-red-500 transition-colors" title="נקה שיחה">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+            </svg>
+        </button>
+    </header>
+
+    <!-- Chat Viewport -->
+    <main id="chat-viewport" class="flex-grow p-4 overflow-y-auto flex flex-col gap-4 chat-container">
+        <!-- Initial Message -->
+        <div class="ai-msg message-bubble p-4 shadow-sm">
+            שלום אדם! אני מוכן ומחובר תחת ה-API Key שלך ב-GitHub. איך אני יכול לעזור היום?
+        </div>
+    </main>
+
+    <!-- Input Box -->
+    <footer class="p-4 bg-white dark:bg-slate-800 border-t dark:border-slate-700 shadow-xl">
+        <div class="max-w-4xl mx-auto flex gap-3">
+            <input type="text" id="user-input" 
+                class="flex-grow p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-right transition-all"
+                placeholder="כתוב משהו..." autocomplete="off">
+            <button id="send-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-2xl shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                </svg>
+            </button>
+        </div>
+    </footer>
+
+    <script>
+        // הגדרות ה-API
+        const API_KEY = "AIzaSyC08AXOJ8WAxp6c5A6z45NBTt_n8Y-D30I";
+        const MODEL = "gemini-1.5-flash";
+        const SYSTEM_PROMPT = "אתה ה-AI האישי של אדם. אתה עוזר חכם, מנומס ומקצועי. ענה תמיד בעברית.";
+
+        const chatViewport = document.getElementById('chat-viewport');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const resetBtn = document.getElementById('reset-btn');
+
+        let history = [];
+
+        // פונקציית קריאה ל-API
+        async function fetchAIResponse(prompt) {
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
+            
+            const payload = {
+                contents: [
+                    { role: "user", parts: [{ text: `System context: ${SYSTEM_PROMPT}` }] },
+                    ...history,
+                    { role: "user", parts: [{ text: prompt }] }
+                ]
+            };
+
+            const response = await fetch(endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error?.message || "שגיאת תקשורת");
+            }
+
+            const data = await response.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "לא התקבלה תשובה";
+            
+            // עדכון היסטוריה
+            history.push({ role: "user", parts: [{ text: prompt }] });
+            history.push({ role: "model", parts: [{ text: text }] });
+            
+            return text;
+        }
+
+        // הוספת הודעה למסך
+        function appendMessage(text, sender) {
+            const bubble = document.createElement('div');
+            bubble.className = `${sender}-msg message-bubble p-4 shadow-sm mb-2`;
+            
+            if (sender === 'ai') {
+                bubble.innerHTML = marked.parse(text);
+            } else {
+                bubble.innerText = text;
+            }
+            
+            chatViewport.appendChild(bubble);
+            chatViewport.scrollTo({ top: chatViewport.scrollHeight, behavior: 'smooth' });
+        }
+
+        // טיפול בשליחה
+        async function handleSend() {
+            const text = userInput.value.trim();
+            if (!text || sendBtn.disabled) return;
+
+            appendMessage(text, 'user');
+            userInput.value = '';
+            sendBtn.disabled = true;
+
+            // חיווי טעינה קטן
+            const loadingId = 'loading-' + Date.now();
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = loadingId;
+            loadingDiv.className = 'ai-msg message-bubble p-4 opacity-50 italic';
+            loadingDiv.innerText = 'חושב...';
+            chatViewport.appendChild(loadingDiv);
+            chatViewport.scrollTop = chatViewport.scrollHeight;
+
+            try {
+                const aiResponse = await fetchAIResponse(text);
+                document.getElementById(loadingId).remove();
+                appendMessage(aiResponse, 'ai');
+            } catch (err) {
+                document.getElementById(loadingId).remove();
+                appendMessage(`שגיאה: ${err.message}`, 'ai');
+                console.error(err);
+            } finally {
+                sendBtn.disabled = false;
+            }
+        }
+
+        // מאזינים
+        sendBtn.addEventListener('click', handleSend);
+        userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSend(); });
+        resetBtn.addEventListener('click', () => {
+            chatViewport.innerHTML = '';
+            history = [];
+            appendMessage("הצ'אט אופס. איך אני יכול לעזור?", 'ai');
+        });
+    </script>
+</body>
+</html>
